@@ -14,8 +14,8 @@ which is conveniently linked in the helper tool site :),
 for documentation purposes though here it is, 
 
 [Quake Topographic Map](https://ahounain.github.io/quake-topomap)
-
-
+\
+\
 IMPORTANT NOTE!!!!!
 
 ![Screenshot 2023-12-23 at 8 49 34 PM](https://github.com/ahounain/quake-topomap/assets/69880126/36339d5e-3cd5-40ec-84c3-79012f0a15ba)
@@ -28,10 +28,10 @@ Now with your data, put in a center latitude and longitude into the GUI and spec
 if all the earthquakes happen outside of the region you set they will be outside of the "Walls." Make sure you choose a good 
 center for the best visual results. 
 
-For a cool experimental (terrible occurence :(( ) one, try these variables.
-Lat: 38
-Long: 143
-Radius: 5km
+For a cool experimental (terrible occurence :(( ) one, try these variables.\
+Lat: 38\
+Long: 143\
+Radius: 5km\
 
 URL: https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2011-03-01&endtime=2011-03-31&minlatitude=37&maxlatitude=39&minlongitude=142&maxlongitude=143
 note: Its reaaaaaaaaally long.
