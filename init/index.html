@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple USGS API URL</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>  
+    <h1>Simple USGS API URL Generator</h1>
+    <form id="dataForm">
+        <label for="startDate">Start Date:</label><br>
+        <input type="date" id="startDate" name="startDate"><br>
+        <label for="endDate">End Date:</label><br>
+        <input type="date" id="endDate" name="endDate"><br>
+        <label for="minLat">Min Latitude: (between -90 and 90)</label><br>
+        <input type="number" id="minLat" name="minLat"><br>
+        <label for="maxLat">Max Latitude:(between -90 and 90) </label><br>
+        <input type="number" id="maxLat" name="maxLat"><br>
+        <label for="minLong">Min Longitude: (between -180 and 180)</label><br>
+        <input type="number" id="minLong" name="minLong"><br>
+        <label for="maxLong">Max Longitude: (between -180 and 180)</label><br>
+        <input type="number" id="maxLong" name="maxLong"><br>
+        <input type="submit" value="Generate URL">
+    </form>
+
+    <p id="generatedUrl"> </p>
+    <h2> Copy the contents of this url into the Load Data section of the GUI! [ once its generated :) ]</h2>
+    <h2> Click this link to go to the main website</h2>
+    <a href = "https://ahounain.github.io/cs460student/githubpagesfinal/"> Topographic Earthquake Viewer </a>
+
+    
+</body>
+<script>
+        document.getElementById('dataForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var startDate = document.getElementById('startDate').value;
+            var endDate = document.getElementById('endDate').value;
+            var minLat = document.getElementById('minLat').value;
+            var maxLat = document.getElementById('maxLat').value;
+            var minLong = document.getElementById('minLong').value;
+            var maxLong = document.getElementById('maxLong').value;
+
+            var url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${startDate}&endtime=${endDate}&minlatitude=${minLat}&maxlatitude=${maxLat}&minlongitude=${minLong}&maxlongitude=${maxLong}`;
+            var link = document.createElement('a');
+            link.href = url;
+            link.textContent = url;
+            link.target = '_blank';
+            var container = document.getElementById('generatedUrl');
+            container.innerHTML = '';
+            container.appendChild(link);
+        });
+    </script>
+</html>
