@@ -57,6 +57,48 @@
             // added this to prevent user from loading in more terrain before parameters are set
             // or adding more JSON data before the terrain is loaded so on so forth,
             // essentially it makes it such that everything must be done in order
+
+        const presets = [
+            {
+                name: 'Vanuatu, Coral Sea',
+                parameters: {
+                latitude: -19.5,
+                longitude: 169.5,
+                radius: 5
+                }
+            },
+            {
+                name: 'Peru, near Juanjui',
+                parameters: {
+                latitude: -7.169,
+                longitude: -76.728,
+                radius: 5
+                }
+            },
+            {
+                name: 'Dominican Republic, near Higuey',
+                parameters: {
+                latitude: 18.616,
+                longitude: -68.707,
+                radius: 5
+                }
+            }
+            ];
+
+            presets.forEach(preset => {
+                const folder = gui.addFolder(preset.name);
+                folder.add({
+                    setPreset: function() {
+                    parameters.latitude = preset.parameters.latitude;
+                    parameters.longitude = preset.parameters.longitude;
+                    parameters.radius = preset.parameters.radius;
+                    refreshTerrain();
+                    alert("Please refresh the page before setting another preset or using other controls. loadData is fine to use however.");
+                    }
+                }, 'setPreset');
+                });
+
+
         gui.add({changeLatitude: function() {
          
             if (!isLatitudeChanged) {
@@ -85,7 +127,7 @@
         gui.add({changeRadius: function() {
             if (!isRadiusChanged) {
                 let newValue = parseFloat(prompt("Enter new radius (0 to 5):"));
-                if (newValue >= 0 && newValue <= 500) {
+                if (newValue >= 0 && newValue <= 125) {
                     parameters.radius = newValue;
                     isRadiusChanged = true;
                 } else {
