@@ -16,7 +16,9 @@ for documentation purposes though here it is,
 [Quake Topographic Map](https://ahounain.github.io/quake-topomap)
 
 
-IMPORTANT NOTE!!!!
+IMPORTANT NOTE!!!!!
+[Screenshot 2023-12-23 at 8 49 34 PM](https://github.com/ahounain/quake-topomap/assets/69880126/36339d5e-3cd5-40ec-84c3-79012f0a15ba)
+
 Make sure that you follow the GUI steps in order from top to bottom, I have included warnings and errors to yell at you
 in case you slip up though so don't worry too much.
 Another important note, if you want to do another map, simply refresh the page and reenter the variables and data.
