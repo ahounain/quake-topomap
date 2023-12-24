@@ -51,12 +51,7 @@
 
 
         *************************************************************/
-            // basic structure of these code blocks is that for each parameter,
-            // it creates an anonymous function that is called when the user clicks the button
-            // if it isnt changed yet, then the user can change it.
-            // added this to prevent user from loading in more terrain before parameters are set
-            // or adding more JSON data before the terrain is loaded so on so forth,
-            // essentially it makes it such that everything must be done in order
+        // thise code sets up some basic geographic presets that had intensive earthquakes
 
         const presets = [
             {
@@ -82,9 +77,38 @@
                 longitude: -68.707,
                 radius: 5
                 }
-            }
+            },
+             {
+                name: 'Chile, Near Valdivia',
+                parameters: {
+                latitude: -39.8,
+                longitude: -73.2,
+                radius: 5
+                }
+            },
+            {
+                name: 'Alaska, Prince William Sound',
+                parameters: {
+                latitude: 61.0,
+                longitude: -147.5,
+                radius: 5
+                }
+            },
+            {
+                name: 'Indonesia, Northern Sumatra',
+                parameters: {
+                latitude: 3.3,
+                longitude: 95.8,
+                radius: 5
+                }
+            },
             ];
-
+            // basic structure of these code blocks is that for each parameter,
+            // it creates an anonymous function that is called when the user clicks the button
+            // if it isnt changed yet, then the user can change it.
+            // added this to prevent user from loading in more terrain before parameters are set
+            // or adding more JSON data before the terrain is loaded so on so forth,
+            // essentially it makes it such that everything must be done in order
             presets.forEach(preset => {
                 const folder = gui.addFolder(preset.name);
                 folder.add({
