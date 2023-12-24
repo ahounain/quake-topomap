@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <title>simple-viewer</title>
+    <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.159.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@<version>/examples/jsm/"
+    }
+  }
+</script>
+</head>
+<body>
+    <canvas id="canvas" width = '1920' height = '1080' ></canvas>
+
+    <script src="three.min.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="stats.min.js"></script>
+
+    <script src="three-geo.min.js"></script>
+    <script type = "module" src = "GLTFExporter.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    
+    <div id="tooltip" style="display: none; position: absolute; pointer-events: none; padding: 10px; background: rgba(0, 0, 0, 0.5); color: white; border-radius: 5px;"></div>
+
+
+    <script type="module">
+    
+    (async () => {
+        const dots = [];
+        // create a gui
+
+        const gui = new dat.GUI();
+        // Define the object that holds your variables
+        const parameters = {
+            latitude: 64,
+            longitude: -21,
+            radius: 2
+        };
+        let isLatitudeChanged = false;
+        let isLongitudeChanged = false;
+        let isRadiusChanged = false;
+        // add input fields to the GUI
+        gui.add({changeLatitude: function() {
+            if (!isLatitudeChanged) {
+                let newValue = parseFloat(prompt("Enter new latitude (-90 to 90):"));
+                if (newValue >= -90 && newValue <= 90) {
+                    parameters.latitude = newValue;
+                    isLatitudeChanged = true;
+                } else {
+                    alert("Invalid input. Please enter a number between -90 and 90.");
+                }
+            }
+        }}, 'changeLatitude');
+
+        gui.add({changeLongitude: function() {
+            if (!isLongitudeChanged) {
+                let newValue = parseFloat(prompt("Enter new longitude (-180 to 180):"));
+                if (newValue >= -180 && newValue <= 180) {
+                    parameters.longitude = newValue;
+                    isLongitudeChanged = true;
+                } else {
+                    alert("Invalid input. Please enter a number between -180 and 180.");
+                }
+            }
+        }}, 'changeLongitude');
+
+        gui.add({changeRadius: function() {
+            if (!isRadiusChanged) {
+                let newValue = parseFloat(prompt("Enter new radius (0 to 5):"));
+                if (newValue >= 0 && newValue <= 500) {
+                    parameters.radius = newValue;
+                    isRadiusChanged = true;
+                } else {
+                    alert("Invalid input. Please enter a number between 0 and 5.");
+                }
+            }
+        }}, 'changeRadius');
+
+        gui.add({refreshTerrain: function() {
+            if (isLatitudeChanged && isLongitudeChanged && isRadiusChanged) {
+                refreshTerrain();
+            } else {
+                alert("Please set all parameters before refreshing the terrain.");
+            }
+        }}, 'refreshTerrain');
+        
+        gui.add({loadData: function() {
+            
+        
+            const json = prompt("Enter JSON data:");
+            const data = JSON.parse(json);
+            if (data && data.features) {
+                data.features.forEach(feature => {
+                    // grab coords
+                    const coordinates = feature.geometry.coordinates;
+                    // grab lat and long
+                    const magnitude = feature.properties.mag;
+                    const longitudeDot = coordinates[0];
+                    const latitudeDot = coordinates[1];
+                    // need to work out how to get the elevation (z)
+                    // convert from geographic coords to WebGL coords
+                    const {proj, unitsPerMeter } = tgeo.getProjection([parameters.latitude, parameters.longitude], parameters.radius);
+                    const [x, y] = proj([latitudeDot, longitudeDot]), z = 20;
+                    // create a marker
+                    const geom = new THREE.BufferGeometry();
+                    const vertices = new Float32Array([x, y , z * unitsPerMeter]);
+                    geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+                    let color; 
+                    if (magnitude < 3) {
+                        console.log(magnitude);
+                        color = 0x00cc00;
+                    } else if (magnitude <= 4) {
+                        color = 0xffff00;
+                    } else if (magnitude <= 5) {
+                        color = 0xff0000;
+                    } else {
+                        color = 0x00cc00;
+                    }
+                    
+                    const dot = new THREE.Points(geom, new THREE.PointsMaterial({
+                        size: 8,
+                        sizeAttenuation: false,
+                        color: color,
+                    }));
+                    dot.userData.title = feature.properties.title;
+                    scene.add(dot);
+                    dots.push(dot);
+
+                    console.log(`Longitude: ${longitudeDot}, Latitude: ${latitudeDot} Magnitude: ${magnitude}`);
+                });
+            } else {
+                alert("Invalid JSON data.");
+            }
+        }}, 'loadData');
+        
+
+       // GAMEPLAN 
+       // get data from USGS API
+       // load in a little earthquake gltf for each data point
+       // add a hover effect to the gltf such that it displays the title of the earthquake from the json prompt
+
+
+
+        THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+        // create canvas 
+        const canvas = document.getElementById("canvas");
+        const tooltip = document.getElementById('tooltip');
+        // resize the canvas to fill browser window dynamically
+        window.addEventListener("resize", function() {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+        })
+        // create camera and setpos
+        const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.1, 1000);
+        camera.position.set(0, 0, 1.5);
+        // create rendererand orbit controls
+        const renderer = new THREE.WebGLRenderer({ canvas });
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // create scene and the 3d "walls" and axes
+        // note: this code was taken from the three-geo.js examples
+        // i thought it was a nice feature to orient the map
+        const scene = new THREE.Scene();
+        const walls = new THREE.LineSegments(
+            new THREE.EdgesGeometry(new THREE.BoxBufferGeometry(1, 1, 1)),
+            new THREE.LineBasicMaterial({color: 0xcccccc}));
+        walls.position.set(0, 0, 0);
+        scene.add(walls);
+        scene.add(new THREE.AxesHelper(1));
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        canvas.addEventListener('mousemove', (event) => {
+            console.log(event.clientX, event.clientY);
+            mouse.x = (event.clientX / canvas.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(dots);
+
+            if (intersects.length > 0) {
+                console.log('Showing tooltip');
+                tooltip.style.display = 'block';
+                tooltip.textContent = intersects[0].object.userData.title;
+                tooltip.style.left = event.clientX + 'px';
+                tooltip.style.top = event.clientY + 'px';
+
+                const position = intersects[0].point.clone();
+                position.project(camera);
+
+                const x = (position.x * 0.5 + 0.5) * canvas.clientWidth;
+                const y = (position.y * -0.5 + 0.5) * canvas.clientHeight;
+
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+
+            } else {
+                tooltip.style.display = 'none';
+            }
+        }, false);
+
+
+
+        // render the stats and append
+        const stats = new Stats();
+        stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
+        document.body.appendChild(stats.dom);
+        const render = () => {
+            stats.update();
+            renderer.render(scene, camera);
+        };
+
+        controls.addEventListener('change', render);
+        render(); // first time
+
+        // API token, get your own at https://www.mapbox.com/
+        // left mine in just for implementation purposes
+        const ioToken = 'sk.eyJ1IjoiYWhvdW5haW4iLCJhIjoiY2xwcjd0bDVrMDdmbzJqbzBydnZ0a3l4eCJ9.LkPI09omn9o4dYfEharg9Q';
+        // create a 
+        const tgeo = new ThreeGeo({
+            tokenMapbox: ioToken, //originally planned on a system to read in token from a file but that didn't work
+        });
+        // 
+
+        
+        let terrain;
+        async function refreshTerrain() {
+            
+            
+           
+        const origin = [parameters.latitude, parameters.longitude];
+        const radius = parameters.radius;
+        terrain = await tgeo.getTerrainRgb(
+            origin,               // [lat, lng]
+            radius,              // radius of bounding circle (km) (limited to 5 so my api token doesnt get wasted)
+                                // users are free to modify above and below at their own expense lol
+            11);               // zoom resolution (too high will cause large requests)
+
+        scene.add(terrain);
+        
+        render();
+        }
+
+
+    //onst {proj, unitsPerMeter } = tgeo.getProjection(origin, radius);
+    /*
+    const data = {
+
+};
+    
+        data.features.forEach(feature => {
+            // grab coords
+        const coordinates = feature.geometry.coordinates;
+        // grab lat and long
+        const longitude = coordinates[0];
+        const latitude = coordinates[1];
+        // need to work out how to get the elevation (z)
+        // conver from geographic coords to WebGL coords
+        const [x, y] = proj([latitude, longitude]), z = 20;
+        // create a marker
+        const geom = new THREE.BufferGeometry();
+        const vertices = new Float32Array([x, y , z * unitsPerMeter]);
+        geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+        const dot = new THREE.Points(geom, new THREE.PointsMaterial({
+        size: 8,
+        sizeAttenuation: false,
+        color: 0x00cccc,
+}));
+
+scene.add(dot);
+        
+
+ console.log(`Longitude: ${longitude}, Latitude: ${latitude}`);
+ */
+//});
+
+
+
+
+
+
+
+
+
+
+
+
+
+        render();
+    })();
+    </script>
+</body>
+</html>
