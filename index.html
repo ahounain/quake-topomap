@@ -29,21 +29,36 @@
     <script type="module">
     
     (async () => {
+        // this array will hold all the "dots" , which represent the locations of the earthquakes
         const dots = [];
         // create a gui
 
         const gui = new dat.GUI();
-        // Define the object that holds your variables
+        // just initial values for the parameters
         const parameters = {
             latitude: 64,
             longitude: -21,
             radius: 2
         };
+        // flags to prevent the user from refreshing the terrain before all the parameters are set
         let isLatitudeChanged = false;
         let isLongitudeChanged = false;
         let isRadiusChanged = false;
-        // add input fields to the GUI
+        /************************************************************
+        GUI CODE
+
+        The following code is for the GUI. It allows the user to change the latitude, longitude, and radius of the terrain.
+
+
+        *************************************************************/
+            // basic structure of these code blocks is that for each parameter,
+            // it creates an anonymous function that is called when the user clicks the button
+            // if it isnt changed yet, then the user can change it.
+            // added this to prevent user from loading in more terrain before parameters are set
+            // or adding more JSON data before the terrain is loaded so on so forth,
+            // essentially it makes it such that everything must be done in order
         gui.add({changeLatitude: function() {
+         
             if (!isLatitudeChanged) {
                 let newValue = parseFloat(prompt("Enter new latitude (-90 to 90):"));
                 if (newValue >= -90 && newValue <= 90) {
@@ -87,28 +102,35 @@
             }
         }}, 'refreshTerrain');
         
+        // this anon function loads in the JSON data from the user
         gui.add({loadData: function() {
             
         
             const json = prompt("Enter JSON data:");
             const data = JSON.parse(json);
+            // if theres some data to work with and it has some features
             if (data && data.features) {
+                // go through each feature of the features (the format of the USGS API note: this can always be tweaked to fit whatever JSON format you are using if you don't want to use USGS)
                 data.features.forEach(feature => {
                     // grab coords
                     const coordinates = feature.geometry.coordinates;
-                    // grab lat and long
+                    // grab lat and long and magnitude
                     const magnitude = feature.properties.mag;
                     const longitudeDot = coordinates[0];
                     const latitudeDot = coordinates[1];
-                    // need to work out how to get the elevation (z)
+                    
                     // convert from geographic coords to WebGL coords
                     const {proj, unitsPerMeter } = tgeo.getProjection([parameters.latitude, parameters.longitude], parameters.radius);
+                    
                     const [x, y] = proj([latitudeDot, longitudeDot]), z = 20;
+
                     // create a marker
                     const geom = new THREE.BufferGeometry();
                     const vertices = new Float32Array([x, y , z * unitsPerMeter]);
                     geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
+                    // this code creates a "heatmap" of sorts based on the magnitude of the earthquake
+                    // green < 3 , red <= 4, yellow <= 5, purple > 5
                     let color; 
                     if (magnitude < 3) {
                         console.log(magnitude);
@@ -118,9 +140,9 @@
                     } else if (magnitude <= 5) {
                         color = 0xff0000;
                     } else {
-                        color = 0x00cc00;
+                        color = 0x800080;
                     }
-                    
+                    // creates a dot with the magnitude color and the title of the earthquake and adds it to the scene
                     const dot = new THREE.Points(geom, new THREE.PointsMaterial({
                         size: 8,
                         sizeAttenuation: false,
@@ -129,7 +151,7 @@
                     dot.userData.title = feature.properties.title;
                     scene.add(dot);
                     dots.push(dot);
-
+                    // for debugging purposes
                     console.log(`Longitude: ${longitudeDot}, Latitude: ${latitudeDot} Magnitude: ${magnitude}`);
                 });
             } else {
@@ -137,13 +159,18 @@
             }
         }}, 'loadData');
         
-
-       // GAMEPLAN 
-       // get data from USGS API
-       // load in a little earthquake gltf for each data point
-       // add a hover effect to the gltf such that it displays the title of the earthquake from the json prompt
+// END GUI SETUP
 
 
+       /*******************************************************************
+        * CANVAS SET UP
+        * 
+        *   Here we set up the canvas, tooltip, raycaster, orbitcontrols, "walls",
+        *  axes, camera, renderer, stats, instance of ThreeGeo and scene.
+        * 
+        * 
+        * 
+        * ****************************************************************/
 
         THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
         // create canvas 
@@ -157,9 +184,10 @@
         // create camera and setpos
         const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.1, 1000);
         camera.position.set(0, 0, 1.5);
-        // create rendererand orbit controls
+        // create renderer and orbit controls
         const renderer = new THREE.WebGLRenderer({ canvas });
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
         // create scene and the 3d "walls" and axes
         // note: this code was taken from the three-geo.js examples
         // i thought it was a nice feature to orient the map
@@ -170,26 +198,32 @@
         walls.position.set(0, 0, 0);
         scene.add(walls);
         scene.add(new THREE.AxesHelper(1));
-
+        // create raycaster and mouse
+        // this is used to detect when the mouse is hovering over a dot, and display the dot's title
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
+        // add event listener for mouse movement
         canvas.addEventListener('mousemove', (event) => {
             console.log(event.clientX, event.clientY);
             mouse.x = (event.clientX / canvas.clientWidth) * 2 - 1;
             mouse.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-
+            // checks if the mouse is hovering over a dot SPECIFICALLY....
             const intersects = raycaster.intersectObjects(dots);
 
             if (intersects.length > 0) {
-                console.log('Showing tooltip');
+                // debug tool
+                //console.log('Showing tooltip');
+
+                // tooltip style setup
                 tooltip.style.display = 'block';
                 tooltip.textContent = intersects[0].object.userData.title;
                 tooltip.style.left = event.clientX + 'px';
                 tooltip.style.top = event.clientY + 'px';
 
+                // some chicanery I had to do to get from pixel coords to WebGL coords
                 const position = intersects[0].point.clone();
                 position.project(camera);
 
@@ -221,18 +255,25 @@
         // API token, get your own at https://www.mapbox.com/
         // left mine in just for implementation purposes
         const ioToken = 'sk.eyJ1IjoiYWhvdW5haW4iLCJhIjoiY2xwcjd0bDVrMDdmbzJqbzBydnZ0a3l4eCJ9.LkPI09omn9o4dYfEharg9Q';
-        // create a 
+        // create a instance of ThreeGeo
         const tgeo = new ThreeGeo({
             tokenMapbox: ioToken, //originally planned on a system to read in token from a file but that didn't work
         });
-        // 
-
         
+
+// END SCENE SETUP
+        /*******************************************************************
+         * refreshTerrain()
+         * 
+         * This function is called whenever the user interacts with the refreshTerrain button.
+         * 
+         * 
+         * ****************************************************************/
         let terrain;
         async function refreshTerrain() {
             
             
-           
+        // these were all set up up top in the GUI section   
         const origin = [parameters.latitude, parameters.longitude];
         const radius = parameters.radius;
         terrain = await tgeo.getTerrainRgb(
@@ -247,51 +288,7 @@
         }
 
 
-    //onst {proj, unitsPerMeter } = tgeo.getProjection(origin, radius);
-    /*
-    const data = {
-
-};
-    
-        data.features.forEach(feature => {
-            // grab coords
-        const coordinates = feature.geometry.coordinates;
-        // grab lat and long
-        const longitude = coordinates[0];
-        const latitude = coordinates[1];
-        // need to work out how to get the elevation (z)
-        // conver from geographic coords to WebGL coords
-        const [x, y] = proj([latitude, longitude]), z = 20;
-        // create a marker
-        const geom = new THREE.BufferGeometry();
-        const vertices = new Float32Array([x, y , z * unitsPerMeter]);
-        geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-
-        const dot = new THREE.Points(geom, new THREE.PointsMaterial({
-        size: 8,
-        sizeAttenuation: false,
-        color: 0x00cccc,
-}));
-
-scene.add(dot);
-        
-
- console.log(`Longitude: ${longitude}, Latitude: ${latitude}`);
- */
-//});
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // this is the main render loop
         render();
     })();
     </script>
