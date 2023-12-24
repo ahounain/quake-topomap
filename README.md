@@ -31,7 +31,7 @@ center for the best visual results.
 For a cool experimental (terrible occurence :(( ) one, try these variables.\
 Lat: 38\
 Long: 143\
-Radius: 5km\
+Radius: 5km
 
 URL: https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2011-03-01&endtime=2011-03-31&minlatitude=37&maxlatitude=39&minlongitude=142&maxlongitude=143
 note: Its reaaaaaaaaally long.
